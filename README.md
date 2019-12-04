@@ -7,3 +7,5 @@ the temp.py needs bowtie2, cutadapt , picard and the perl script which is also u
 
 Both the python and perl scripts were modified from the original scrips using by SmallRNA pluggin from IonTorrent Server to be able to do the analysis of the Colorado potato beetle.
 
+the beetles.Rmd is the R markdown file used to build the report.
+
