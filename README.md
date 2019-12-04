@@ -9,3 +9,14 @@ Both the python and perl scripts were modified from the original scrips using by
 
 the beetles.Rmd is the R markdown file used to build the report.
 
+featurecounts command line used:
+
+
+featureCounts --minReadOverlap 15 -M -O -d 15 -D 40 -Q 0 -T 12 -a ../new_lde.count.gff3 -t miRNA -g Name -o featureCount.mirbase.total.txt  IonXpressRNA_013_filtered.bam IonXpressRNA_014_filtered.bam IonXpressRNA_015_filtered.bam IonXpressRNA_016_filtered.bam IonXpressRNA_017_filtered.bam IonXpressRNA_018_filtered.bam
+
+additional files location:
+
+/backup2/Reference_data/References_genome/Leptinotarsa_decemlineata/mirna_analysis
+
+there you can find the bowtie2 indexes for the mapping, the gtf and fasta for the mirBaseAlignmentFilter.pl and the gff3 for the featurecounts.
+
