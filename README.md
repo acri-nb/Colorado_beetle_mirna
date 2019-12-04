@@ -16,7 +16,7 @@ featureCounts --minReadOverlap 15 -M -O -d 15 -D 40 -Q 0 -T 12 -a ../new_lde.cou
 
 additional files location:
 
-/backup2/Reference_data/References_genome/Leptinotarsa_decemlineata/mirna_analysis
+acri@10.253.0.10:/backup2/Reference_data/References_genome/Leptinotarsa_decemlineata/mirna_analysis
 
 there you can find the bowtie2 indexes for the mapping, the gtf and fasta for the mirBaseAlignmentFilter.pl and the gff3 for the featurecounts.
 
