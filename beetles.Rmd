@@ -1,0 +1,145 @@
+---
+title: "smallRNAseq_report_03122019_Colorado_potato_beetles"
+author: "Gabriel Wajnberg"
+date: "03/12/2019"
+output: html_document
+fig_width: 8
+fig_height: 8
+fig_align: "center"
+---
+The data were mapped using the miRNAs anotated for Leptinotarsa decemlineata (Schoville et al., 2018) from the Ldec 2.0 genome assembly version from NCBI.
+
+
+## Dependencies
+```{r dependencies, echo=TRUE, message=FALSE, warning=FALSE}
+library("FactoMineR")
+library("edgeR")
+library("ggplot2")
+library("gplots")
+library("squash")
+library("RColorBrewer")
+```
+## Import your raw count data
+
+```{r import_count_data}
+setwd("~/colorado_beetles_ont/")
+raw <- read.table("featureCount.mirbase.total.txt",sep="\t",header=T)
+raw <- raw[,c(1,7:12)]
+rownames(raw) <- raw$Geneid
+raw$Geneid <- NULL
+colnames(raw)<- c("ON-2-N-1-E","ON-2-N-2-E","ON-2-N-3-E","ON-5-N-1-E","ON-5-N-2-E","ON-5-N-3-E")
+```
+
+## The DGE object is then created for data analysis
+
+```{r Create_DGE}
+dge <- DGEList(counts = raw,genes = rownames(raw))
+dge$samples$group = c(rep(1,3),rep(2,3))
+```
+
+```{r set_graphical_parameters}
+colors=c(rep("red",3),rep("blue",3))
+```
+
+## Library size plot and table of mapping quality, in red the controls and blue the resitants: 
+
+```{r Raw_data_distributions, echo=FALSE}
+barplot(dge$samples$lib.size,col=colors,main="Raw library size",names.arg=colnames(raw))
+```
+
+```{r table_mapped_reads, echo=FALSE}
+stats <- data.frame(miRNA_reads=dge$samples$lib.size,total_reads=c(18307250,17851020,18705734,20250069,17084116,2123075))
+rownames(stats) = rownames(dge$samples)
+stats$pct_mapped = stats$miRNA_reads/stats$total_reads*100
+stats
+```
+
+It means the the sample ON-5-N-3-E had low number total reads, that explains the low number of miRNA reads.This sample was removed for the rest of the analysis.
+```{r removing_last_sample, echo=FALSE}
+raw2 <- raw[,-6]
+dge <- DGEList(counts = raw2,genes = rownames(raw2))
+dge$samples$group = c(rep(1,3),rep(2,2))
+
+```
+
+## Filtering step
+
+The miRNAs with underexpression were removed, using a filter of to keep miRNAs with >10 reads in at least 2 control samples or >10 reads in at least 1 of the 2 left resitant samples. 
+
+```{r data_filtering, echo=FALSE}
+keep <- which(rowSums(dge$counts[,1:3] > 10) >=2)
+keep2 <- which(rowSums(dge$counts[,4:5] > 10) >=1)
+dge_filtered <- dge[unique(c(names(keep2),names(keep))),]
+```
+
+There was 170 known L.decemlineata known miRNAs,after the filtering, we removed 45 miRNAs.
+
+
+```{r normalization, echo=FALSE}
+dge_filtered <- calcNormFactors(dge_filtered,method = "TMM")
+dge_filtered <- estimateCommonDisp(dge_filtered)
+```
+
+## Boxplot of normalized values, using TMM normalization
+```{r boxplots, echo=FALSE}
+boxplot(log2(dge_filtered$pseudo.counts+1))
+```
+The boxplots shows that the normalization worked well.
+
+
+## MDS plot
+
+```{r MDSplot, echo=FALSE}
+plotMDS(dge_filtered)
+```
+
+
+```{r DEanalysis, echo=FALSE}
+dge_filtered <- estimateTagwiseDisp(dge_filtered)
+results <- exactTest(dge_filtered)
+total_de <- topTags(results,n=nrow(dge_filtered$counts))
+full_results <- cbind(dge_filtered$counts,dge_filtered$pseudo.counts)
+colnames(full_results) <- c(paste(colnames(full_results)[1:5],"_rawCounts"),paste(colnames(full_results)[1:5],"_normalizedCounts"))
+full_results <- merge(full_results,total_de$table,by="row.names")
+rownames(full_results) <- full_results$Row.name
+full_results$Row.names <- NULL
+write.csv (full_results,file="full_ldecemlineata.csv")
+
+```
+## Volcano plot
+
+Which: not passing any threshold (black dots) ; passing only the p-value 0.05 threshold (orange dots); passing only the log2FC threshold < -0.41 or > 0.58 (purple dots); and passing both p-value log2FC threshold (yellow dots)
+
+```{r volcano, echo=FALSE}
+with(full_results,plot(logFC, -log10(PValue),pch=20, main="Volcano plot"))
+with(subset(full_results,PValue<.05),points(logFC, -log10(PValue),pch=20,col="purple"))
+with(subset(full_results,logFC > 0.58 | logFC < -0.41), points(logFC, -log10(PValue),pch=20, col="orange"))
+with (subset(full_results,PValue < 0.05 & (logFC > 0.58 | logFC < -0.41)), points(logFC, -log10(PValue), pch=20,col="yellow"))
+```
+
+
+
+## Number of upregulated genes log2FC > 0.58 and pvalue < 0.05:
+```{r up, echo=FALSE}
+subset(full_results,full_results$logFC > 0.58 & full_results$PValue < 0.05)
+```
+
+## Number of upregulated genes log2FC < -0.41 and pvalue < 0.05:
+```{r down, echo=FALSE}
+subset(full_results,full_results$logFC < -0.41 & full_results$PValue < 0.05)
+```
+
+
+## Heatmap of the DE miRNA genes which passed the threshold.
+```{r heatmap_de_genes, echo=FALSE}
+DE_genes <- as.matrix(rbind(subset(full_results[,6:10],full_results$logFC > 0.58 & full_results$PValue < 0.05),subset(full_results[,6:10],full_results$logFC < -0.41 & full_results$PValue < 0.05)) + 1 /rowMeans(rbind(subset(full_results[,6:10],full_results$logFC > 0.58 & full_results$PValue < 0.05),subset(full_results[,6:10],full_results$logFC < -0.41 & full_results$PValue < 0.05))))
+heatmap.2(log2(DE_genes/rowMeans(DE_genes)),col=blueorange(59),trace='none',symm=F,symkey=F,symbreaks=T,breaks=c(seq(-3,-1,length=20),seq(-0.9,0.9,length=20), seq(1,3,length=20)),margins=c(12,14),cexRow=0.8,main="DE genes",ColSideColors=c(rep("blue",3),rep("pink",2)))
+
+```
+
+## Session information
+
+```{r sessinfo}
+sessionInfo()
+```
+
