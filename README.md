@@ -1,5 +1,6 @@
 # Colorado_beetle_mirna
-Pipeline to do the analysis of Colorado potato beetles
+Pipeline to do the analysis of Colorado potato beetles used for ION PROTON DATA 
+For nova seq you still can use the same reference data, but you will need to perform a new analysis with nextflex smallRNAseq lib requirements (trimming and mapping instructins in small RNA seq pipeline).
 
 temp.py is the pipeline program which uses as input a raw basecaller bam file from the IonProton, map to the fasta miRNA of genome Ldec 2.0 version  and produces in the end a aligned reads filtered file which is going to be the input for the feature count software.
 
@@ -16,7 +17,7 @@ featureCounts --minReadOverlap 15 -M -O -d 15 -D 40 -Q 0 -T 12 -a ../new_lde.cou
 
 additional files location:
 
-acri@10.253.0.10:/backup2/Reference_data/References_genome/Leptinotarsa_decemlineata/mirna_analysis
+acri@10.111.90.44:/mnt/user/LTS//backup2/Reference_data/References_genome/Leptinotarsa_decemlineata/mirna_analysis
 
 there you can find the bowtie2 indexes for the mapping, the gtf and fasta for the mirBaseAlignmentFilter.pl and the gff3 for the featurecounts.
 
